@@ -32,7 +32,7 @@ def read_custom_points(file_path, point_coordinates):
     # 验证每组是否有两个点
     for y, points in grouped_points.items():
         if len(points) != 2:
-            raise ValueError(f"纵坐标{y}的点数量不为2，请检查数据！")
+            raise ValueError(f"纵坐标{y}的点数量不为2，请检查数据")
 
     return dict(grouped_points)
 
