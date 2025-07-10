@@ -8,7 +8,7 @@ def read_custom_points(file_path, point_coordinates):
     返回按纵坐标分组的点字典，格式为{y_value: [(x1, y), (x2, y)]}
     """
     if len(point_coordinates) != 12:
-        raise ValueError("需要提供12个单元格位置（即6个点的横纵坐标）")
+        raise ValueError("需要提供12个单元格位置")
 
     df = pd.read_excel(file_path, header=None, sheet_name=0) # sheet是否需要指定？
 

@@ -10,6 +10,8 @@ from collections import defaultdict
 import re
 import tempfile
 
+import Process_Excel_Points as pep
+
 class CoordinateSystem:
     def __init__(self):
         self.x_min = None
@@ -146,6 +148,22 @@ class CoordinateSystem:
 
         return coord_system
 
+    def auto_detect_range(self):
+        """识别坐标轴范围"""
+        if not self.x_ticks or not self.y_ticks:
+            raise ValueError("未识别到刻度")
+
+        x_values = list(self.x_ticks.keys())
+        self.x_min = min(x_values)
+        self.x_max = max(x_values)
+
+        y_values = list(self.y_ticks.keys())
+        self.y_min = min(y_values)
+        self.y_max = max(y_values)
+
+        print(f"坐标范围: X=[{self.x_min}, {self.x_max}], Y=[{self.y_min}, {self.y_max}]")
+        return self.x_min, self.x_max, self.y_min, self.y_max
+
 def extract_image_from_pdf(pdf_path, output_dir="output", page_num=0, dpi=300):
     """从PDF中提取图并保存"""
     # TODO: 不保存图
@@ -177,11 +195,9 @@ def extract_image_from_pdf(pdf_path, output_dir="output", page_num=0, dpi=300):
     print(f"PDF图已提取并保存到: {image_path}")
     return image, image_path
 
-def auto_detect_axes(image, x_min, x_max, y_min, y_max):
+def auto_detect_axes(image):
     """自动检测坐标轴并识别刻度"""
     coord_system = CoordinateSystem()
-    coord_system.set_x_range(x_min, x_max)
-    coord_system.set_y_range(y_min, y_max)
 
     print("开始检测坐标轴")
 
@@ -270,38 +286,40 @@ def auto_detect_axes(image, x_min, x_max, y_min, y_max):
 
         # x轴刻度
         print("x轴刻度")
-        x_ticks = ocr_recognize_ticks(coord_system.reader, x_axis_roi, 'x')
+        x_ticks = ocr_recognize_ticks(coord_system.reader, x_axis_roi)
         for value, pos in x_ticks.items():
-            abs_x = origin_x + pos[0]
+            abs_x = min(x1, x2) + pos[0]
             abs_y = origin_y - 5 # 在x轴上方显示
             coord_system.add_x_tick(value, (abs_x, abs_y))
             print(f"x刻度: {value} @ ({abs_x:.1f}, {abs_y:.1f})")
 
         # y轴刻度
         print("y轴刻度")
-        y_ticks = ocr_recognize_ticks(coord_system.reader, y_axis_roi, 'y')
+        y_ticks = ocr_recognize_ticks(coord_system.reader, y_axis_roi)
         for value, pos in y_ticks.items():
             abs_x = origin_x + 5 # 在y轴右侧显示
-            abs_y = origin_y + pos[1]
+            abs_y = min(y3, y4) + pos[1]
             coord_system.add_y_tick(value, (abs_x, abs_y))
             print(f"y刻度: {value} @ ({abs_x:.1f}, {abs_y:.1f})")
 
+        coord_system.auto_detect_range()
+
         # 在图上绘制坐标轴
         img_with_axes = image.copy()
-        cv2.line(img_with_axes, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 3)
-        cv2.line(img_with_axes, (int(x3), int(y3)), (int(x4), int(y4)), (0, 255, 0), 3)
-        cv2.circle(img_with_axes, (int(origin_x), int(origin_y)), 8, (255, 0, 0), -1)
+        #cv2.line(img_with_axes, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 3)
+        #cv2.line(img_with_axes, (int(x3), int(y3)), (int(x4), int(y4)), (0, 255, 0), 3)
+        #cv2.circle(img_with_axes, (int(origin_x), int(origin_y)), 8, (255, 0, 0), -1)
 
         # 绘制刻度
-        for value, (x, y) in coord_system.x_ticks.items():
-            cv2.circle(img_with_axes, (int(x), int(y)), 4, (255, 0, 0), -1)
-            cv2.putText(img_with_axes, f"{value:.1f}", (int(x), int(y)),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+        #for value, (x, y) in coord_system.x_ticks.items():
+        #    cv2.circle(img_with_axes, (int(x), int(y)), 4, (255, 0, 0), -1)
+        #    cv2.putText(img_with_axes, f"{value:.1f}", (int(x), int(y)),
+        #                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
 
-        for value, (x, y) in coord_system.y_ticks.items():
-            cv2.circle(img_with_axes, (int(x), int(y)), 4, (255, 0, 0), -1)
-            cv2.putText(img_with_axes, f"{value:.1f}", (int(x), int(y)),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+        #for value, (x, y) in coord_system.y_ticks.items():
+        #    cv2.circle(img_with_axes, (int(x), int(y)), 4, (255, 0, 0), -1)
+        #    cv2.putText(img_with_axes, f"{value:.1f}", (int(x), int(y)),
+        #                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
 
         plt.figure(figsize=(12, 8))
         plt.imshow(cv2.cvtColor(img_with_axes, cv2.COLOR_BGR2RGB))
@@ -344,7 +362,13 @@ def ocr_recognize_ticks(reader, image):
         cv2.imwrite(temp_path, inverted)
 
     # easyOCR识别文本
-    results = reader.readtext(temp_path)
+    results = reader.readtext(
+        temp_path,
+        detail=1,
+        paragraph=False,
+        batch_size=4,
+        allowlist='0123456789'
+    )
 
     os.unlink(temp_path)
 
@@ -370,47 +394,33 @@ def ocr_recognize_ticks(reader, image):
     return recognized
 
 def plot_data_on_image(coord_system, data_points, output_path="output/result.png"):
-    """在图像上绘制数据点"""
+    """在图上绘制数据点"""
     if not coord_system.is_valid():
         print("坐标系统不完整，无法绘制数据点")
         return
 
     try:
-        # 复制原始图像
         img_with_points = coord_system.image.copy()
-
-        # 绘制坐标轴
-        origin_x, origin_y = coord_system.origin
-        x_end_x, x_end_y = coord_system.x_end
-        y_end_x, y_end_y = coord_system.y_end
-
-        cv2.line(img_with_points, (int(origin_x), int(origin_y)),
-                 (int(x_end_x), int(x_end_y)), (0, 0, 255), 2)
-        cv2.line(img_with_points, (int(origin_x), int(origin_y)),
-                 (int(y_end_x), int(y_end_y)), (0, 255, 0), 2)
 
         # 绘制Excel数据点
         point_count = 0
         for y_value, points in data_points.items():
             for x_value, y_value in points:
-                # 将数据坐标转换为图像坐标
+                # 数据坐标->图坐标
                 x_img, y_img = coord_system.data_to_image(x_value, y_value)
 
-                # 在图像上绘制点
                 cv2.circle(img_with_points, (int(x_img), int(y_img)), 8, (0, 0, 255), -1)
                 cv2.putText(img_with_points, f"({x_value:.1f}, {y_value:.1f})",
                             (int(x_img) + 10, int(y_img) - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
                 point_count += 1
 
-        # 保存结果
         cv2.imwrite(output_path, cv2.cvtColor(img_with_points, cv2.COLOR_RGB2BGR))
-        print(f"\n已绘制 {point_count} 个数据点到图像: {output_path}")
+        print(f"\n已绘制 {point_count} 个数据点到图: {output_path}")
 
-        # 显示结果
         plt.figure(figsize=(12, 8))
         plt.imshow(cv2.cvtColor(img_with_points, cv2.COLOR_BGR2RGB))
-        plt.title("带数据点的特性曲线")
+        plt.title("含数据点的特性曲线")
         plt.axis('off')
         plt.show()
 
@@ -419,3 +429,47 @@ def plot_data_on_image(coord_system, data_points, output_path="output/result.png
     except Exception as e:
         print(f"绘图失败: {str(e)}")
         return False
+
+def main():
+    output_dir = "output"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # 从PDF提取图
+    pdf_path = "C:/Users/13438/Desktop/导出页面自 四川雅砻江孟底沟水电站水轮机模型初步试验报告.pdf"
+
+    image, image_path = extract_image_from_pdf(pdf_path, output_dir)
+
+    # 自动检测坐标轴
+    print("\n自动检测坐标轴")
+    coord_system = auto_detect_axes(image)
+
+    if coord_system is None:
+        print("坐标轴检测失败")
+        return
+
+    # 设置图
+    coord_system.set_image(image, image_path)
+
+    # 保存坐标系统
+    coord_save_path = os.path.join(output_dir, "coordinate_system.json")
+    coord_system.save(coord_save_path)
+
+    # 加载Excel数据
+    excel_path = "C:/Users/13438/Desktop/数据点.xlsx"
+    custom_points = [
+        'A2', 'B2',  # 第一个点
+        'A3', 'B3',  # 第二个点
+        'A4', 'B4',  # 第三个点
+        'A5', 'B5',  # 第四个点
+        'A6', 'B6',  # 第五个点
+        'A7', 'B7'   # 第六个点
+    ]
+    data_points = pep.read_custom_points(excel_path, custom_points)
+
+    # 在图上绘制数据点
+    result_path = os.path.join(output_dir, "result.png")
+    plot_data_on_image(coord_system, data_points, result_path)
+
+if __name__ == "__main__":
+    main()
