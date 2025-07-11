@@ -222,12 +222,12 @@ def auto_detect_axes(image):
             x1, y1, x2, y2 = line[0]
             angle = np.arctan2(y2 - y1, x2 - x1) * 180 / np.pi
 
-            # 水平线(角度在-1到1度之间)
-            if -1 < angle < 1:
+            # 水平线(角度在-5到5度之间)
+            if -5 < angle < 5:
                 horizontal.append((x1, y1, x2, y2))
 
-            # 垂直线(角度在89-91或-89--91度之间)
-            elif (89 < angle < 91) or (-91 < angle < -89):
+            # 垂直线(角度在85 - 95或-85 - -95度之间)
+            elif (85 < angle < 95) or (-95 < angle < -85):
                 vertical.append((x1, y1, x2, y2))
 
         if not horizontal:
@@ -302,6 +302,24 @@ def auto_detect_axes(image):
             coord_system.add_y_tick(value, (abs_x, abs_y))
             print(f"y刻度: {value} @ ({abs_x:.1f}, {abs_y:.1f})")
 
+        # 在识别刻度后添加验证
+        if not x_ticks:
+            print("警告：未识别到X轴刻度值")
+        else:
+            print(f"识别到X轴刻度值: {list(x_ticks.keys())}")
+
+        if not y_ticks:
+            print("警告：未识别到Y轴刻度值")
+        else:
+            print(f"识别到Y轴刻度值: {list(y_ticks.keys())}")
+
+        # 如果刻度值不符合预期，尝试手动输入
+        if not x_ticks or min(x_ticks.keys()) < 50 or max(x_ticks.keys()) > 2000:
+            print("X轴刻度值异常，请手动输入范围")
+            x_min = float(input("X轴最小值: "))
+            x_max = float(input("X轴最大值: "))
+            coord_system.set_x_range(x_min, x_max)
+
         coord_system.auto_detect_range()
 
         # 在图上绘制坐标轴
@@ -343,18 +361,26 @@ def auto_detect_axes(image):
 
 def ocr_recognize_ticks(reader, image):
     """easyOCR识别坐标轴刻度"""
-    # 转换为灰度，增强对比度
+    # 增强对比度
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+    enhanced = clahe.apply(gray)
 
-    # 二值化处理
-    _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    # 使用自适应阈值处理
+    thresh = cv2.adaptiveThreshold(
+        enhanced, 255,
+        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY_INV, 15, 2
+    )
 
-    # 形态学操作去除小噪点
-    kernel = np.ones((2, 2), np.uint8)
-    cleaned = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=1)
+    # 形态学操作去除网格线
+    kernel_h = np.ones((1, 15), np.uint8)  # 水平核
+    kernel_v = np.ones((15, 1), np.uint8)  # 垂直核
+    cleaned_h = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel_h)
+    cleaned_v = cv2.morphologyEx(cleaned_h, cv2.MORPH_OPEN, kernel_v)
 
     # 反转图（白底黑字->黑底白字）
-    inverted = cv2.bitwise_not(cleaned)
+    inverted = cv2.bitwise_not(cleaned_v)
 
     # 保存临时图用于OCR
     with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_file:
@@ -372,18 +398,23 @@ def ocr_recognize_ticks(reader, image):
 
     os.unlink(temp_path)
 
+    # 添加特殊字符处理
     recognized = {}
     for result in results:
         text = result[1]
-        bbox = result[0]
 
-        text = re.sub(r'[^0-9.]', '', text) # 移除非数字字符
-        if not text or text.count('.') > 1:
-            continue
+        # 处理常见OCR错误
+        text = text.replace('O', '0').replace('o', '0')
+        text = text.replace('l', '1').replace('I', '1')
+        text = text.replace('s', '5').replace('S', '5')
+
+        # 移除非数字字符
+        text = re.sub(r'[^0-9.\-]', '', text)
 
         try:
             value = float(text)
-
+            # 获取位置信息
+            bbox = result[0]
             x_center = (bbox[0][0] + bbox[2][0]) / 2
             y_center = (bbox[0][1] + bbox[2][1]) / 2
 

@@ -23,18 +23,7 @@ def read_custom_points(file_path, point_coordinates):
 
         points.append((x, y))
 
-    # 按纵坐标分组
-    grouped_points = defaultdict(list)
-    for point in points:
-        x, y = point
-        grouped_points[y].append((x, y))
-
-    # 验证每组是否有两个点
-    for y, points in grouped_points.items():
-        if len(points) != 2:
-            raise ValueError(f"纵坐标{y}的点数量不为2，请检查数据")
-
-    return dict(grouped_points)
+    return points
 
 def get_cell_value(df, cell_ref):
     col_letter = cell_ref[0].upper()
