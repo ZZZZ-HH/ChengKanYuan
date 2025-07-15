@@ -256,7 +256,7 @@ class MainWindow(QMainWindow):
 
     def save_image_as(self):
         if not self.current_output_path:
-            QMessageBox.warning(self, "警告", "没有可保存的图像")
+            QMessageBox.warning(self, "警告", "没有可保存的图像！")
             return
 
         source_path = os.path.normpath(self.current_output_path)
