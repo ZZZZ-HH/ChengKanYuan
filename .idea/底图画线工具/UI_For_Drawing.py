@@ -13,7 +13,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("底图画线工具")
-        self.setGeometry(100, 100, 1600, 900)
+        #self.setGeometry(100, 100, 1600, 900)
 
         main_widget = QWidget()
         main_layout = QVBoxLayout()
@@ -278,5 +278,6 @@ class MainWindow(QMainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
+    window.setWindowState(Qt.WindowMaximized)
     window.show()
     sys.exit(app.exec_())

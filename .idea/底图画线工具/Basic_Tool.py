@@ -145,10 +145,13 @@ def map_coordinates_to_image(pdf_path, points, x_range, y_range, output_path):
         ]
         draw.ellipse(bbox, fill="red", outline="white")
 
-    grid_img.save(output_path)
+    full_img_copy = full_img.copy()
+    full_img_copy.paste(grid_img, (x1, y1))
+
+    full_img_copy.save(output_path)
     print(f"结果已保存至: {output_path}")
 
-    return grid_img
+    return full_img_copy
 
 def mark_point_on_image(pdf_path, point, x_range, y_range, output_path):
     """
@@ -197,10 +200,13 @@ def mark_point_on_image(pdf_path, point, x_range, y_range, output_path):
     ]
     draw.ellipse(bbox, fill="red", outline="white")
 
-    grid_img.save(output_path)
+    full_img_copy = full_img.copy()
+    full_img_copy.paste(grid_img, (x1, y1))
+
+    full_img_copy.save(output_path)
     print(f"点标注结果已保存至: {output_path}")
 
-    return grid_img
+    return full_img_copy
 
 if __name__ == "__main__":
     file_path = "C:/Users/13438/Desktop/数据点.xlsx"
