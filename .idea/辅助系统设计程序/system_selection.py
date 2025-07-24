@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QStackedWidget
 from PyQt5.QtCore import Qt, pyqtSignal
 
-from System_Calculations.tech_water_supply_system import TechWaterSupplySystemPage
+from System_Calculations.tech_water_supply_system_page import TechWaterSupplySystemPage
 
 class SystemSelectionWindow(QWidget):
     go_back = pyqtSignal()
@@ -9,6 +9,7 @@ class SystemSelectionWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.system_pages = {}
+        self.selected_model = ""
         self.initUI()
 
     def initUI(self):
@@ -69,6 +70,7 @@ class SystemSelectionWindow(QWidget):
         for system in systems:
             if system == "技术供水系统":
                 page = TechWaterSupplySystemPage()
+                page.set_model_name(self.selected_model)
                 self.content_area.addWidget(page)
                 self.system_pages[system] = page
             else:
@@ -101,6 +103,11 @@ class SystemSelectionWindow(QWidget):
         main_layout.addLayout(bottom_layout)
 
         self.setLayout(main_layout)
+
+    def set_model_name(self, model_name):
+        self.selected_model = model_name
+        for page in self.system_pages.values():
+            page.set_model_name(model_name)
 
     def switch_system(self, index):
         for i, btn in enumerate(self.system_buttons):

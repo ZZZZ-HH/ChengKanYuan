@@ -58,6 +58,7 @@ class MainWindow(QMainWindow):
 
     def handle_basic_params(self, params):
         self.basic_param = params
+        self.system_selection.set_model_name(self.selected_model)
         self.switch_window(4)
         print("接收到的参数：", self.basic_param)
 

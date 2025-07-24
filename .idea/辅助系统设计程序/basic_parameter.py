@@ -85,7 +85,35 @@ class BasicParamWindow(QWidget):
         # 3.日期
         date_layout = QHBoxLayout()
         date_input = QDateEdit()
-        date_input.setStyleSheet(input_style)
+        date_input.setStyleSheet("""
+            QDateEdit {
+                font-size: 30px;
+                min-height: 60px;
+                height: 60px;
+            }
+            QCalendarWidget QWidget {
+                font-size: 16px;
+                alternate-background-color: #f0f0f0;
+            }
+            QCalendarWidget QToolButton {
+                height: 30px;
+                width: 80px;
+                font-size: 16px;
+                icon-size: 20px, 20px;
+            }
+            QCalendarWidget QMenu {
+                font-size: 16px;
+            }
+            QCalendarWidget QSpinBox {
+                width: 80px;
+                font-size: 16px;
+            }
+            QCalendarWidget QAbstractItemView {
+                selection-background-color: #3498db;
+                selection-color: white;
+                font-size: 16px;
+            }
+        """)
         date_input.setCalendarPopup(True)
         date_input.setDate(QDate.currentDate())
         date_input.setDisplayFormat("yyyy-MM-dd")
