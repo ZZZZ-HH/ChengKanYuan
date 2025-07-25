@@ -1,11 +1,13 @@
 from PyQt5.QtWidgets import (QWidget, QLabel, QVBoxLayout, QLineEdit, QFormLayout,
                              QHBoxLayout, QScrollArea, QGridLayout, QGroupBox)
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QDoubleValidator
 
 class TechWaterSupplySystemPage(QWidget):
     def __init__(self):
         super().__init__()
         self.model_label = None
+        self.input_fields = {} # 存储所有输入字段
         self.initUI()
 
     def initUI(self):
@@ -55,6 +57,7 @@ class TechWaterSupplySystemPage(QWidget):
         label1.setStyleSheet("font-size: 24px;")
         self.input1 = QLineEdit(self)
         self.input1.setStyleSheet("font-size: 24px; min-height: 40px;")
+        self.input_fields["1.供水方式"] = self.input1
         water_supply_layout.addRow(label1, self.input1)
 
         water_supply_group.setLayout(water_supply_layout)
@@ -94,11 +97,19 @@ class TechWaterSupplySystemPage(QWidget):
         for col, header in enumerate(headers):
             header_label = QLabel(header)
             header_label.setStyleSheet("font-size: 22px; font-weight: bold;")
+            header_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             section21_layout.addWidget(header_label, 0, col)
 
-        self.section21_inputs = []
         for row in range(1, 5):
-            param_label = QLabel(f"参数{row}") # TODO 改成对应项目名
+            match row:
+                case 1:
+                    param_label = QLabel(f"空气冷却器Q<sub>kl</sub>")
+                case 2:
+                    param_label = QLabel(f"推力轴承油冷却器Q<sub>tl</sub>")
+                case 3:
+                    param_label = QLabel(f"上导轴承油冷却器Q<sub>sd</sub>")
+                case 4:
+                    param_label = QLabel(f"下导轴承油冷却器Q<sub>xd</sub>")
             param_label.setStyleSheet("font-size: 20px;")
             section21_layout.addWidget(param_label, row, 0)
 
@@ -107,24 +118,25 @@ class TechWaterSupplySystemPage(QWidget):
                 font-size: 20px; 
                 min-height: 35px;
                 font-family: 'Times New Roman';
-                background-color: #f9f9f9;
             """)
             section21_layout.addWidget(formula_input, row, 1)
-            self.section21_inputs.append(formula_input)
+            self.input_fields[f"2.1.{row}.公式"] = formula_input
 
             calc_input = QLineEdit()
             calc_input.setStyleSheet("""
                 font-size: 20px; 
                 min-height: 35px;
-                background-color: #f9f9f9;
             """)
             section21_layout.addWidget(calc_input, row, 2)
-            self.section21_inputs.append(calc_input)
+            self.input_fields[f"2.1.{row}.计算值"] = calc_input
 
             value_input = QLineEdit()
             value_input.setStyleSheet("font-size: 20px; min-height: 35px;")
             section21_layout.addWidget(value_input, row, 3)
-            self.section21_inputs.append(value_input)
+            self.input_fields[f"2.1.{row}.取值"] = value_input
+
+            calc_input.setValidator(QDoubleValidator(0, 1e9, 2, self))
+            value_input.setValidator(QDoubleValidator(0, 1e9, 2, self))
 
         section21_group.setLayout(section21_layout)
         param_layout.addWidget(section21_group)
@@ -147,11 +159,16 @@ class TechWaterSupplySystemPage(QWidget):
         for col, header in enumerate(headers):
             header_label = QLabel(header)
             header_label.setStyleSheet("font-size: 22px; font-weight: bold;")
+            header_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             section22_layout.addWidget(header_label, 0, col)
 
         self.section22_inputs = []
         for row in range(1, 3):
-            param_label = QLabel(f"参数{row}") # TODO 改成对应项目名
+            match row:
+                case 1:
+                    param_label = QLabel(f"水导轴承冷却水Q<sub>sd</sub>")
+                case 2:
+                    param_label = QLabel(f"主轴密封供水Q<sub>zz</sub>")
             param_label.setStyleSheet("font-size: 20px;")
             section22_layout.addWidget(param_label, row, 0)
 
@@ -160,27 +177,82 @@ class TechWaterSupplySystemPage(QWidget):
                 font-size: 20px; 
                 min-height: 35px;
                 font-family: 'Times New Roman';
-                background-color: #f9f9f9;
             """)
             section22_layout.addWidget(formula_input, row, 1)
-            self.section22_inputs.append(formula_input)
+            self.input_fields[f"2.2.{row}.公式"] = formula_input
 
             calc_input = QLineEdit()
             calc_input.setStyleSheet("""
                 font-size: 20px; 
                 min-height: 35px;
-                background-color: #f9f9f9;
             """)
             section22_layout.addWidget(calc_input, row, 2)
-            self.section22_inputs.append(calc_input)
+            self.input_fields[f"2.2.{row}.计算值"] = calc_input
 
             value_input = QLineEdit()
             value_input.setStyleSheet("font-size: 20px; min-height: 35px;")
             section22_layout.addWidget(value_input, row, 3)
-            self.section22_inputs.append(value_input)
+            self.input_fields[f"2.2.{row}.取值"] = value_input
+
+            calc_input.setValidator(QDoubleValidator(0, 1e9, 2, self))
+            value_input.setValidator(QDoubleValidator(0, 1e9, 2, self))
 
         section22_group.setLayout(section22_layout)
         param_layout.addWidget(section22_group)
+
+        section23_group = QGroupBox("2.3 机组总用水量")
+        section23_group.setStyleSheet("""
+            QGroupBox {
+                font-size: 24px;
+                font-weight: bold;
+                border: 1px solid #3498db;
+                border-radius: 8px;
+                margin-top: 10px;
+                padding-top: 25px;
+            }
+        """)
+        section23_layout = QGridLayout()
+        section23_layout.setHorizontalSpacing(15)
+        section23_layout.setVerticalSpacing(15)
+
+        # 表头
+        headers23 = ["", "计算值", "设计值"]
+        for col, header in enumerate(headers23):
+            header_label = QLabel(header)
+            header_label.setStyleSheet("font-size: 22px; font-weight: bold;")
+            header_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            section23_layout.addWidget(header_label, 0, col)
+
+        calc_layout = QHBoxLayout()
+        self.total_calc_input = QLineEdit()
+        self.total_calc_input.setReadOnly(True)
+        self.total_calc_input.setStyleSheet("""
+            font-size: 20px; 
+            min-height: 35px;
+        """)
+        calc_layout.addWidget(self.total_calc_input)
+        calc_unit = QLabel("m³/h")
+        calc_unit.setStyleSheet("font-size: 20px; min-height: 35px; padding-top: 5px;")
+        calc_layout.addWidget(calc_unit)
+        section23_layout.addLayout(calc_layout, 1, 1)
+        self.input_fields["2.3.计算值"] = self.total_calc_input
+
+        value_layout = QHBoxLayout()
+        self.total_value_input = QLineEdit()
+        self.total_value_input.setReadOnly(True)
+        self.total_value_input.setStyleSheet("""
+            font-size: 20px; 
+            min-height: 35px;
+        """)
+        value_layout.addWidget(self.total_value_input)
+        value_unit = QLabel("m³/h")
+        value_unit.setStyleSheet("font-size: 20px; min-height: 35px; padding-top: 5px;")
+        value_layout.addWidget(value_unit)
+        section23_layout.addLayout(value_layout, 1, 2)
+        self.input_fields["2.3.设计值"] = self.total_value_input
+
+        section23_group.setLayout(section23_layout)
+        param_layout.addWidget(section23_group)
 
         param_group.setLayout(param_layout)
         content_layout.addWidget(param_group)
@@ -192,6 +264,42 @@ class TechWaterSupplySystemPage(QWidget):
 
         self.setLayout(main_layout)
 
+        self.connect_signals()
+
     def set_model_name(self, model_name):
         if self.model_label:
             self.model_label.setText(f"机组类型：{model_name}")
+
+    def connect_signals(self):
+        # 2.1的4个计算值和4个取值
+        for i in range(1, 5):
+            self.input_fields[f"2.1.{i}.计算值"].textChanged.connect(self.update_total_water_usage)
+            self.input_fields[f"2.1.{i}.取值"].textChanged.connect(self.update_total_water_usage)
+
+        # 2.2的2个计算值和2个取值
+        for i in range(1, 3):
+            self.input_fields[f"2.2.{i}.计算值"].textChanged.connect(self.update_total_water_usage)
+            self.input_fields[f"2.2.{i}.取值"].textChanged.connect(self.update_total_water_usage)
+
+    def update_total_water_usage(self):
+        total_calc = 0.0
+        total_value = 0.0
+
+        # 2.1
+        for i in range(1, 5):
+            calc = float(self.input_fields[f"2.1.{i}.计算值"].text() or 0)
+            total_calc += calc
+
+            value = float(self.input_fields[f"2.1.{i}.取值"].text() or 0)
+            total_value += value
+
+        # 2.2
+        for i in range(1, 3):
+            calc = float(self.input_fields[f"2.2.{i}.计算值"].text() or 0)
+            total_calc += calc
+
+            value = float(self.input_fields[f"2.2.{i}.取值"].text() or 0)
+            total_value += value
+
+        self.total_calc_input.setText(f"{total_calc:.2f}")
+        self.total_value_input.setText(f"{total_value:.2f}")
