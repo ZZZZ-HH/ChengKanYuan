@@ -305,9 +305,15 @@ class TechWaterSupplySystemPage(QWidget):
 
             row_layout.addWidget(label)
 
-            input_field = QLineEdit()
-            input_field.setStyleSheet("font-size: 20px; min-height: 35px; min-width: 250px;")
-            row_layout.addWidget(input_field)
+            if i == 6:
+                self.total_design_usage_input = QLineEdit()
+                self.total_design_usage_input.setReadOnly(True)
+                self.total_design_usage_input.setStyleSheet("font-size: 20px; min-height: 35px; min-width: 250px;")
+                row_layout.addWidget(self.total_design_usage_input)
+            else:
+                input_field = QLineEdit()
+                input_field.setStyleSheet("font-size: 20px; min-height: 35px; min-width: 250px;")
+                row_layout.addWidget(input_field)
 
             unit_label = QLabel(unit)
             unit_label.setStyleSheet("font-size: 20px; min-height: 35px; padding-top: 5px; min-width: 70px;")
@@ -317,7 +323,7 @@ class TechWaterSupplySystemPage(QWidget):
 
             section25_layout.addLayout(row_layout)
 
-            self.input_fields[f"2.5.{i+1}.{param_name}"] = input_field
+            self.input_fields[f"2.5.{i+1}"] = input_field
 
         section25_group.setLayout(section25_layout)
         param_layout.addWidget(section25_group)
@@ -420,12 +426,21 @@ class TechWaterSupplySystemPage(QWidget):
                     max_input.setStyleSheet("font-size: 20px; min-height: 35px; min-width: 80px;")
                     row_layout.addWidget(max_input)
 
+                    if j == 0:
+                        unit_label = QLabel("m")
+                        unit_label.setStyleSheet("font-size: 20px; padding-left: 5px;")
+                        row_layout.addWidget(unit_label)
+
                     self.input_fields[f"{title}.{param_names[i][j]}.最小值"] = min_input
                     self.input_fields[f"{title}.{param_names[i][j]}.最大值"] = max_input
                 else:
                     value_input = QLineEdit()
                     value_input.setStyleSheet("font-size: 20px; min-height: 35px; min-width: 180px;")
                     row_layout.addWidget(value_input)
+
+                    unit_label = QLabel("m/s")
+                    unit_label.setStyleSheet("font-size: 20px; padding-left: 5px;")
+                    row_layout.addWidget(unit_label)
 
                     self.input_fields[f"{title}.{param_names[i][j]}"] = value_input
 
@@ -468,6 +483,8 @@ class TechWaterSupplySystemPage(QWidget):
         section26_group.setLayout(section26_layout)
         param_layout.addWidget(section26_group)
 
+
+
         param_group.setLayout(param_layout)
         content_layout.addWidget(param_group)
 
@@ -495,6 +512,10 @@ class TechWaterSupplySystemPage(QWidget):
             self.input_fields[f"2.2.{i}.计算值"].textChanged.connect(self.update_total_water_usage)
             self.input_fields[f"2.2.{i}.取值"].textChanged.connect(self.update_total_water_usage)
 
+        # 2.5的6个设计值
+        for i in range(1, 7):
+            self.input_fields[f"2.5.{i}"].textChanged.connect(self.update_design_water_usage)
+
     def update_total_water_usage(self):
         total_calc = 0.0
         total_value = 0.0
@@ -517,6 +538,15 @@ class TechWaterSupplySystemPage(QWidget):
 
         self.total_calc_input.setText(f"{total_calc:.2f}")
         self.total_value_input.setText(f"{total_value:.2f}")
+
+    def update_design_water_usage(self):
+        total_usage = 0.0
+
+        for i in range(1, 7):
+            design = float(self.input_fields[f"2.5.{i}"].text() or 0)
+            total_usage += design
+
+        self.total_design_usage_input.setText(f"{total_usage:.2f}")
 
     def open_pdf_document(self, path):
         url = QUrl.fromLocalFile(path)

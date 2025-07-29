@@ -153,9 +153,10 @@ def map_coordinates_to_image(pdf_path, points, x_range, y_range, output_path):
 
     return full_img_copy
 
-def mark_point_on_image(pdf_path, point, x_range, y_range, output_path):
+def mark_points_and_connect(pdf_path, points, x_range, y_range, output_path):
     """
-    point: (x, y)
+    标注多个点并按纵坐标排序后连线
+    points: [(x1, y1), (x2, y2), ...] (最多3个点)
     x_range: (min, max)
     y_range: (min, max)
     """
@@ -189,16 +190,28 @@ def mark_point_on_image(pdf_path, point, x_range, y_range, output_path):
         pixel_y = int((1 - y_percent) * grid_height)
         return pixel_x, pixel_y
 
-    # 映射点坐标
-    px, py = map_coord(point[0], point[1])
+    # 映射所有点坐标
+    pixel_points = [map_coord(x, y) for x, y in points]
+
+    # 按纵坐标排序（从大到小）
+    sorted_points = sorted(pixel_points, key=lambda p: p[1])
+
+    # 绘制点之间的连线
+    if len(sorted_points) > 1:
+        for i in range(len(sorted_points) - 1):
+            start_point = sorted_points[i]
+            end_point = sorted_points[i + 1]
+            draw.line([start_point, end_point], fill="red", width=2)
 
     # 绘制点
-    marker_radius = 10 # 点自身大小
-    bbox = [
-        (px - marker_radius, py - marker_radius),
-        (px + marker_radius, py + marker_radius)
-    ]
-    draw.ellipse(bbox, fill="red", outline="white")
+    marker_radius = 6 # 点自身大小
+    for i, point in enumerate(pixel_points):
+        px, py = point
+        bbox = [
+            (px - marker_radius, py - marker_radius),
+            (px + marker_radius, py + marker_radius)
+        ]
+        draw.ellipse(bbox, fill="red", outline="white")
 
     full_img_copy = full_img.copy()
     full_img_copy.paste(grid_img, (x1, y1))

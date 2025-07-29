@@ -13,7 +13,6 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("底图画线工具")
-        #self.setGeometry(100, 100, 1600, 900)
 
         main_widget = QWidget()
         main_layout = QVBoxLayout()
@@ -61,16 +60,32 @@ class MainWindow(QMainWindow):
 
         coord_group.setLayout(coord_layout)
 
-        point_group = QGroupBox("标注指定点")
+        point_group = QGroupBox("标注指定点并连线")
         point_layout = QGridLayout()
 
-        self.point_x_edit = QLineEdit()
-        self.point_y_edit = QLineEdit()
+        # 第一组点
+        point_layout.addWidget(QLabel("点1 X坐标："), 0, 0)
+        self.point1_x_edit = QLineEdit()
+        point_layout.addWidget(self.point1_x_edit, 0, 1)
+        point_layout.addWidget(QLabel("点1 Y坐标："), 0, 2)
+        self.point1_y_edit = QLineEdit()
+        point_layout.addWidget(self.point1_y_edit, 0, 3)
 
-        point_layout.addWidget(QLabel("X坐标:"), 0, 0)
-        point_layout.addWidget(self.point_x_edit, 0, 1)
-        point_layout.addWidget(QLabel("Y坐标:"), 0, 2)
-        point_layout.addWidget(self.point_y_edit, 0, 3)
+        # 第二组点
+        point_layout.addWidget(QLabel("点2 X坐标："), 1, 0)
+        self.point2_x_edit = QLineEdit()
+        point_layout.addWidget(self.point2_x_edit, 1, 1)
+        point_layout.addWidget(QLabel("点2 Y坐标："), 1, 2)
+        self.point2_y_edit = QLineEdit()
+        point_layout.addWidget(self.point2_y_edit, 1, 3)
+
+        # 第三组点
+        point_layout.addWidget(QLabel("点3 X坐标："), 2, 0)
+        self.point3_x_edit = QLineEdit()
+        point_layout.addWidget(self.point3_x_edit, 2, 1)
+        point_layout.addWidget(QLabel("点3 Y坐标："), 2, 2)
+        self.point3_y_edit = QLineEdit()
+        point_layout.addWidget(self.point3_y_edit, 2, 3)
 
         point_group.setLayout(point_layout)
 
@@ -136,11 +151,37 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "错误", "请先选择PDF文件!")
             return
 
-        try:
-            x = float(self.point_x_edit.text())
-            y = float(self.point_y_edit.text())
-        except ValueError:
-            QMessageBox.critical(self, "错误", "坐标必须为有效数字!")
+        points = []
+
+        if self.point1_x_edit.text() and self.point1_y_edit.text():
+            try:
+                x = float(self.point1_x_edit.text())
+                y = float(self.point1_y_edit.text())
+                points.append((x, y))
+            except ValueError:
+                QMessageBox.critical(self, "错误", "点1坐标必须为有效数字!")
+                return
+
+        if self.point2_x_edit.text() and self.point2_y_edit.text():
+            try:
+                x = float(self.point2_x_edit.text())
+                y = float(self.point2_y_edit.text())
+                points.append((x, y))
+            except ValueError:
+                QMessageBox.critical(self, "错误", "点2坐标必须为有效数字!")
+                return
+
+        if self.point3_x_edit.text() and self.point3_y_edit.text():
+            try:
+                x = float(self.point3_x_edit.text())
+                y = float(self.point3_y_edit.text())
+                points.append((x, y))
+            except ValueError:
+                QMessageBox.critical(self, "错误", "点3坐标必须为有效数字!")
+                return
+
+        if not points:
+            QMessageBox.critical(self, "错误", "请至少输入一个点的坐标!")
             return
 
         try:
@@ -160,9 +201,9 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("处理中...")
             QApplication.processEvents()
 
-            result_image = bt.mark_point_on_image(
+            result_image = bt.mark_points_and_connect(
                 pdf_path=self.pdf_path,
-                point=(x, y),
+                points=points,
                 x_range=(x_min, x_max),
                 y_range=(y_min, y_max),
                 output_path=output_path
