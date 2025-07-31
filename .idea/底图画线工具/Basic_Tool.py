@@ -3,6 +3,7 @@ import fitz # PyMuPDF
 import numpy as np
 import io
 import cv2 # OpenCV
+import os
 
 import Process_Excel_Points as pep
 
@@ -67,18 +68,20 @@ def detect_grid_boundaries(image):
             all_y.extend([y1, y2])
 
         if all_x and all_y:
-            # 计算线条密集区域的边界
-            inner_x1 = min(all_x)
-            inner_y1 = min(all_y)
-            inner_x2 = max(all_x)
-            inner_y2 = max(all_y)
+            # 用分位数排除异常值
+            sorted_x = sorted(all_x)
+            sorted_y = sorted(all_y)
 
-            # 安全边界
-            safe_margin = 20 # 像素
-            inner_x1 = max(0, inner_x1 - safe_margin)
-            inner_y1 = max(0, inner_y1 - safe_margin)
-            inner_x2 = min(w, inner_x2 + safe_margin)
-            inner_y2 = min(h, inner_y2 + safe_margin)
+            # 取1%和99%分位数，排除过长线条的影响
+            lower_idx_x = int(len(sorted_x) * 0.01)
+            upper_idx_x = int(len(sorted_x) * 0.99)
+            lower_idx_y = int(len(sorted_y) * 0.01)
+            upper_idx_y = int(len(sorted_y) * 0.99)
+
+            inner_x1 = sorted_x[lower_idx_x]
+            inner_x2 = sorted_x[upper_idx_x]
+            inner_y1 = sorted_y[lower_idx_y]
+            inner_y2 = sorted_y[upper_idx_y]
 
             x = x + inner_x1
             y = y + inner_y1
@@ -87,24 +90,34 @@ def detect_grid_boundaries(image):
 
     return (x, y, x + w, y + h)
 
-def map_coordinates_to_image(pdf_path, points, x_range, y_range, output_path):
+def map_coordinates_to_image(pdf_path, points, x_range, y_range, output_path, base_image=None):
     """
     points格式[(x1, y1), (x2, y2), ...]
     x_range格式(x_min, x_max)
     y_range格式(y_min, y_max)
+    base_image: 基于现有图像继续绘制
     """
-    doc = fitz.open(pdf_path)
-    page = doc.load_page(0) # TODO: 可以拓展加载pdf的指定页数的功能
+    if base_image is None:
+        doc = fitz.open(pdf_path)
+        page = doc.load_page(0) # TODO: 可以拓展加载pdf的指定页数的功能
 
-    images = page.get_images(full=True)
-    xref = images[0][0] # TODO: 选择一页中的某张图
-    base_image = doc.extract_image(xref)
-    image_bytes = base_image["image"]
-    full_img = Image.open(io.BytesIO(image_bytes))
+        images = page.get_images(full=True)
+        xref = images[0][0] # TODO: 选择一页中的某张图
+        base_image = doc.extract_image(xref)
+        image_bytes = base_image["image"]
+        full_img = Image.open(io.BytesIO(image_bytes))
+    else:
+        full_img = base_image.copy()
 
-    # 自动检测网格边界
-    grid_bbox = detect_grid_boundaries(full_img)
-    print(f"检测到的网格区域: {grid_bbox}")
+    if base_image is None:
+        # 自动检测网格边界
+        grid_bbox = detect_grid_boundaries(full_img)
+        print(f"检测到的网格区域: {grid_bbox}")
+    else:
+        grid_bbox = getattr(full_img, 'grid_bbox', None)
+        if grid_bbox is None:
+            grid_bbox = detect_grid_boundaries(full_img)
+            full_img.grid_bbox = grid_bbox
 
     # 裁剪网格
     x1, y1, x2, y2 = grid_bbox
@@ -147,31 +160,41 @@ def map_coordinates_to_image(pdf_path, points, x_range, y_range, output_path):
 
     full_img_copy = full_img.copy()
     full_img_copy.paste(grid_img, (x1, y1))
+    full_img_copy.grid_bbox = grid_bbox
 
     full_img_copy.save(output_path)
     print(f"结果已保存至: {output_path}")
 
     return full_img_copy
 
-def mark_points_and_connect(pdf_path, points, x_range, y_range, output_path):
+def mark_points_and_connect(pdf_path, points, x_range, y_range, output_path, base_image=None):
     """
     标注多个点并按纵坐标排序后连线
     points: [(x1, y1), (x2, y2), ...] (最多3个点)
     x_range: (min, max)
     y_range: (min, max)
     """
-    doc = fitz.open(pdf_path)
-    page = doc.load_page(0) # TODO: 可以拓展加载pdf的指定页数的功能
+    if base_image is None:
+        doc = fitz.open(pdf_path)
+        page = doc.load_page(0) # TODO: 可以拓展加载pdf的指定页数的功能
 
-    images = page.get_images(full=True)
-    xref = images[0][0] # TODO: 选择一页中的某张图
-    base_image = doc.extract_image(xref)
-    image_bytes = base_image["image"]
-    full_img = Image.open(io.BytesIO(image_bytes))
+        images = page.get_images(full=True)
+        xref = images[0][0] # TODO: 选择一页中的某张图
+        base_image = doc.extract_image(xref)
+        image_bytes = base_image["image"]
+        full_img = Image.open(io.BytesIO(image_bytes))
+    else:
+        full_img = base_image.copy()
 
-    # 自动检测网格边界
-    grid_bbox = detect_grid_boundaries(full_img)
-    print(f"检测到的网格区域: {grid_bbox}")
+    if base_image is None:
+        # 自动检测网格边界
+        grid_bbox = detect_grid_boundaries(full_img)
+        print(f"检测到的网格区域: {grid_bbox}")
+    else:
+        grid_bbox = getattr(full_img, 'grid_bbox', None)
+        if grid_bbox is None:
+            grid_bbox = detect_grid_boundaries(full_img)
+            full_img.grid_bbox = grid_bbox
 
     # 裁剪网格
     x1, y1, x2, y2 = grid_bbox
@@ -215,6 +238,7 @@ def mark_points_and_connect(pdf_path, points, x_range, y_range, output_path):
 
     full_img_copy = full_img.copy()
     full_img_copy.paste(grid_img, (x1, y1))
+    full_img_copy.grid_bbox = grid_bbox
 
     full_img_copy.save(output_path)
     print(f"点标注结果已保存至: {output_path}")

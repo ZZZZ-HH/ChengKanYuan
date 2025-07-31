@@ -23,6 +23,7 @@ class MainWindow(QMainWindow):
         self.excel_path = ""
         self.pdf_path = ""
         self.current_output_path = ""
+        self.current_image = None
 
         self.excel_label = QLabel("未选择Excel文件")
         excel_btn = QPushButton("选择Excel文件")
@@ -93,7 +94,7 @@ class MainWindow(QMainWindow):
         execute_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; height: 40px;")
         execute_btn.clicked.connect(self.execute_mapping)
 
-        mark_point_btn = QPushButton("标注点")
+        mark_point_btn = QPushButton("标注指定点并连线")
         mark_point_btn.setStyleSheet("background-color: #FF9800; color: white; font-weight: bold; height: 40px;")
         mark_point_btn.clicked.connect(self.mark_point)
 
@@ -114,9 +115,14 @@ class MainWindow(QMainWindow):
         self.save_btn.setEnabled(False) # 初始禁用
         self.save_btn.clicked.connect(self.save_image_as)
 
+        reset_btn = QPushButton("重置图像")
+        reset_btn.setStyleSheet("background-color: #F44336; color: white; font-weight: bold; height: 40px;")
+        reset_btn.clicked.connect(self.reset_canvas)
+
         btn_layout = QHBoxLayout()
         btn_layout.addWidget(execute_btn)
         btn_layout.addWidget(mark_point_btn)
+        btn_layout.addWidget(reset_btn)
         btn_layout.addWidget(self.save_btn)
 
         main_layout.addWidget(file_group)
@@ -206,8 +212,11 @@ class MainWindow(QMainWindow):
                 points=points,
                 x_range=(x_min, x_max),
                 y_range=(y_min, y_max),
-                output_path=output_path
+                output_path=output_path,
+                base_image=self.current_image
             )
+
+            self.current_image = result_image
 
             self.statusBar().showMessage(f"点标注完成! 结果已保存至: {os.path.normpath(output_path)}")
 
@@ -272,8 +281,11 @@ class MainWindow(QMainWindow):
                 points=points,
                 x_range=(x_min, x_max),
                 y_range=(y_min, y_max),
-                output_path=output_path
+                output_path=output_path,
+                base_image=self.current_image
             )
+
+            self.current_image = result_image
 
             self.statusBar().showMessage(f"处理完成! 结果已保存至: {os.path.normpath(output_path)}")
 
@@ -315,6 +327,13 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 QMessageBox.critical(self, "保存失败", f"无法保存图像: {str(e)}")
                 print(f"无法保存图像: {str(e)}")
+
+    def reset_canvas(self):
+        self.current_image = None
+        self.current_output_path = ""
+        self.image_label.setText("结果将显示在这里")
+        self.save_btn.setEnabled(False)
+        self.statusBar().showMessage("图像已重置")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
