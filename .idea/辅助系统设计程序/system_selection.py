@@ -6,8 +6,9 @@ from System_Calculations.tech_water_supply_system_page import TechWaterSupplySys
 class SystemSelectionWindow(QWidget):
     go_back = pyqtSignal()
 
-    def __init__(self):
+    def __init__(self, backend_manager):
         super().__init__()
+        self.backend = backend_manager
         self.system_pages = {}
         self.selected_model = ""
         self.initUI()
@@ -69,7 +70,7 @@ class SystemSelectionWindow(QWidget):
         # 创建各个系统的页面
         for system in systems:
             if system == "技术供水系统":
-                page = TechWaterSupplySystemPage()
+                page = TechWaterSupplySystemPage(self.backend)
                 page.set_model_name(self.selected_model)
                 self.content_area.addWidget(page)
                 self.system_pages[system] = page
@@ -105,9 +106,7 @@ class SystemSelectionWindow(QWidget):
         self.setLayout(main_layout)
 
     def set_model_name(self, model_name):
-        self.selected_model = model_name
-        for page in self.system_pages.values():
-            page.set_model_name(model_name)
+        self.backend.set_model(model_name)
 
     def switch_system(self, index):
         for i, btn in enumerate(self.system_buttons):

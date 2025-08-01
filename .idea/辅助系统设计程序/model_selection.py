@@ -4,8 +4,9 @@ from PyQt5.QtCore import Qt, pyqtSignal
 class ModelSelectionWindow(QWidget):
     model_selected = pyqtSignal(str)
 
-    def __init__(self):
+    def __init__(self, backend_manager):
         super().__init__()
+        self.backend = backend_manager
         self.initUI()
 
     def initUI(self):
@@ -45,3 +46,4 @@ class ModelSelectionWindow(QWidget):
 
     def on_model_selected(self, model_name):
         self.model_selected.emit(model_name)
+        self.backend.set_model(model_name)

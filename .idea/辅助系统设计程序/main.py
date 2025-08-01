@@ -6,6 +6,7 @@ from welcome_window import WelcomeWindow
 from model_selection import ModelSelectionWindow
 from basic_parameter import BasicParamWindow
 from system_selection import SystemSelectionWindow
+from backend_manager import BackendManager
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -15,15 +16,17 @@ class MainWindow(QMainWindow):
         self.basic_param = {}
         self.selected_model = ""
 
+        self.backend_manager = BackendManager()
+
         # 堆叠窗口管理器
         self.stacked_widget = QStackedWidget()
         self.setCentralWidget(self.stacked_widget)
 
         self.auth_window = AuthWindow()
         self.welcome_window = WelcomeWindow()
-        self.model_selection = ModelSelectionWindow()
-        self.basic_parameter = BasicParamWindow()
-        self.system_selection = SystemSelectionWindow()
+        self.model_selection = ModelSelectionWindow(self.backend_manager)
+        self.basic_parameter = BasicParamWindow(self.backend_manager)
+        self.system_selection = SystemSelectionWindow(self.backend_manager)
 
         self.stacked_widget.addWidget(self.auth_window) # window 0
         self.stacked_widget.addWidget(self.welcome_window) # window 1

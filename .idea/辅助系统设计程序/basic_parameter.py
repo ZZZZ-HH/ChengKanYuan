@@ -7,8 +7,9 @@ class BasicParamWindow(QWidget):
     go_back = pyqtSignal()
     next_step = pyqtSignal(dict) # 传递参数字典的信号
 
-    def __init__(self):
+    def __init__(self, backend_manager):
         super().__init__()
+        self.backend = backend_manager
         self.back_button = None
         self.next_button = None
         self.input_fields = {} # 存储所有输入字段
@@ -380,6 +381,7 @@ class BasicParamWindow(QWidget):
         generator_model = self.input_fields["发电机型号"].text().strip()
         params["发电机型号"] = generator_model if generator_model else ""
 
+        self.backend.set_basic_params(params)
         self.next_step.emit(params)
 
     def set_model_name(self, model_name):

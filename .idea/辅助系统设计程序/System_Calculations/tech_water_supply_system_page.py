@@ -4,8 +4,9 @@ from PyQt5.QtCore import Qt, QUrl
 from PyQt5.QtGui import QDoubleValidator, QDesktopServices
 
 class TechWaterSupplySystemPage(QWidget):
-    def __init__(self):
+    def __init__(self, backend_manager):
         super().__init__()
+        self.backend = backend_manager
         self.model_label = None
         self.input_fields = {} # 存储所有输入字段
         self.group_style = """
@@ -29,6 +30,11 @@ class TechWaterSupplySystemPage(QWidget):
             }
         """
         self.initUI()
+
+        self.backend.model_changed.connect(self.update_model_label)
+        self.backend.calculation_result_ready.connect(self.update_calculation_results)
+
+        self.update_model_label(self.backend.get_model())
 
     def initUI(self):
         main_layout = QVBoxLayout()
@@ -455,7 +461,7 @@ class TechWaterSupplySystemPage(QWidget):
             pdf_button = QPushButton(button_text)
             pdf_button.setStyleSheet("""
                 QPushButton {
-                    font-size: 18px;
+                    font-size: 24px;
                     font-weight: bold;
                     background-color: #3498db;
                     color: white;
@@ -495,59 +501,33 @@ class TechWaterSupplySystemPage(QWidget):
 
         self.setLayout(main_layout)
 
-        self.connect_signals()
+        for key, input_field in self.input_fields.items():
+            input_field.textChanged.connect(lambda text, k=key: self.on_param_changed(k, text))
 
     def set_model_name(self, model_name):
         if self.model_label:
             self.model_label.setText(f"机组类型：{model_name}")
 
-    def connect_signals(self):
-        # 2.1的4个计算值和4个取值
-        for i in range(1, 5):
-            self.input_fields[f"2.1.{i}.计算值"].textChanged.connect(self.update_total_water_usage)
-            self.input_fields[f"2.1.{i}.取值"].textChanged.connect(self.update_total_water_usage)
-
-        # 2.2的2个计算值和2个取值
-        for i in range(1, 3):
-            self.input_fields[f"2.2.{i}.计算值"].textChanged.connect(self.update_total_water_usage)
-            self.input_fields[f"2.2.{i}.取值"].textChanged.connect(self.update_total_water_usage)
-
-        # 2.5的6个设计值
-        for i in range(1, 7):
-            self.input_fields[f"2.5.{i}"].textChanged.connect(self.update_design_water_usage)
-
-    def update_total_water_usage(self):
-        total_calc = 0.0
-        total_value = 0.0
-
-        # 2.1
-        for i in range(1, 5):
-            calc = float(self.input_fields[f"2.1.{i}.计算值"].text() or 0)
-            total_calc += calc
-
-            value = float(self.input_fields[f"2.1.{i}.取值"].text() or 0)
-            total_value += value
-
-        # 2.2
-        for i in range(1, 3):
-            calc = float(self.input_fields[f"2.2.{i}.计算值"].text() or 0)
-            total_calc += calc
-
-            value = float(self.input_fields[f"2.2.{i}.取值"].text() or 0)
-            total_value += value
-
-        self.total_calc_input.setText(f"{total_calc:.2f}")
-        self.total_value_input.setText(f"{total_value:.2f}")
-
-    def update_design_water_usage(self):
-        total_usage = 0.0
-
-        for i in range(1, 7):
-            design = float(self.input_fields[f"2.5.{i}"].text() or 0)
-            total_usage += design
-
-        self.total_design_usage_input.setText(f"{total_usage:.2f}")
-
     def open_pdf_document(self, path):
         url = QUrl.fromLocalFile(path)
         QDesktopServices.openUrl(url)
+
+    def update_model_label(self, model_name):
+        if self.model_label:
+            self.model_label.setText(f"机组类型：{model_name}")
+
+    def update_calculation_results(self, results):
+        # 2.3 总用水量
+        self.total_calc_input.setText(f"{results.get('2.3.计算值', 0):.2f}")
+        self.total_value_input.setText(f"{results.get('2.3.设计值', 0):.2f}")
+
+        # TODO 2.5只是确认设计值，有问题返回2.1和2.2修改，没问题往下
+        # 2.5 设计用水量
+        design_values = results.get("2.5.设计值", [])
+        for i in range(1, 7):
+            if i-1 < len(design_values):
+                self.input_fields[f"2.5.{i}"].setText(f"{design_values[i-1]:.2f}")
+        self.total_design_usage_input.setText(f"{results.get('2.5.总计', 0):.2f}")
+
+    def on_param_changed(self, key, value):
+        self.backend.set_tech_water_param(key, value)
