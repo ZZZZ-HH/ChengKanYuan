@@ -37,6 +37,12 @@ class BackendManager(QObject):
         """技术供水系统计算"""
         results = {}
 
+        def safe_float(value):
+            try:
+                return float(value)
+            except (ValueError, TypeError):
+                return 0.0
+
         """
         2.3 机组总用水量
         """
@@ -48,8 +54,8 @@ class BackendManager(QObject):
             calc_key = f"2.1.{i}.计算值"
             value_key = f"2.1.{i}.取值"
 
-            calc_val = float(self.tech_water_params.get(calc_key, 0))
-            val_val = float(self.tech_water_params.get(value_key, 0))
+            calc_val = safe_float(self.tech_water_params.get(calc_key, 0))
+            val_val = safe_float(self.tech_water_params.get(value_key, 0))
 
             total_calc += calc_val
             total_value += val_val
@@ -59,8 +65,8 @@ class BackendManager(QObject):
             calc_key = f"2.2.{i}.计算值"
             value_key = f"2.2.{i}.取值"
 
-            calc_val = float(self.tech_water_params.get(calc_key, 0))
-            val_val = float(self.tech_water_params.get(value_key, 0))
+            calc_val = safe_float(self.tech_water_params.get(calc_key, 0))
+            val_val = safe_float(self.tech_water_params.get(value_key, 0))
 
             total_calc += calc_val
             total_value += val_val
@@ -75,7 +81,7 @@ class BackendManager(QObject):
 
         for i in range(1, 7):  # 1-6项
             value_key = f"2.5.{i}"
-            value = float(self.tech_water_params.get(value_key, 0))
+            value = safe_float(self.tech_water_params.get(value_key, 0))
             design_values.append(value)
             design_total += value
 
