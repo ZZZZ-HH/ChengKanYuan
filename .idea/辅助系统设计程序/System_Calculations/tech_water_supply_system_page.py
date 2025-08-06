@@ -39,7 +39,8 @@ class TechWaterSupplySystemPage(QWidget):
                 padding-top: 25px;
             }
         """
-        self.input_style = "font-size: 20px; min-height: 35px;"
+        self.common_input_style = "font-size: 20px; min-height: 35px; text-align: center;"
+        self.input_style = self.common_input_style
         self.header_style = "font-size: 22px; font-weight: bold;"
         self.button_style = """
             QPushButton {
@@ -54,6 +55,7 @@ class TechWaterSupplySystemPage(QWidget):
                 background-color: #2980b9;
             }
         """
+        self.unit_style = "font-size: 20px; min-height: 35px; padding-top: 5px; min-width: 70px;"
 
     def initUI(self):
         main_layout = QVBoxLayout(self)
@@ -140,7 +142,7 @@ class TechWaterSupplySystemPage(QWidget):
         label = QLabel("供水方式：")
         label.setStyleSheet("font-size: 24px;")
         input_field = QLineEdit()
-        input_field.setStyleSheet("font-size: 24px; min-height: 40px;")
+        input_field.setStyleSheet("font-size: 24px; min-height: 40px; text-align: center;")
         layout.addRow(label, input_field)
 
         self.input_fields["1.供水方式"] = input_field
@@ -206,7 +208,9 @@ class TechWaterSupplySystemPage(QWidget):
         self.total_calc_input.setReadOnly(True)
         self.total_calc_input.setStyleSheet(self.input_style)
         calc_layout.addWidget(self.total_calc_input)
-        calc_layout.addWidget(QLabel("m³/h"))
+        unit_label_calc = QLabel("m³/h")
+        unit_label_calc.setStyleSheet(self.unit_style)
+        calc_layout.addWidget(unit_label_calc)
         grid.addLayout(calc_layout, 1, 1)
         self.input_fields["2.3.计算值"] = self.total_calc_input
 
@@ -216,7 +220,9 @@ class TechWaterSupplySystemPage(QWidget):
         self.total_value_input.setReadOnly(True)
         self.total_value_input.setStyleSheet(self.input_style)
         value_layout.addWidget(self.total_value_input)
-        value_layout.addWidget(QLabel("m³/h"))
+        unit_label_value = QLabel("m³/h")
+        unit_label_value.setStyleSheet(self.unit_style)
+        value_layout.addWidget(unit_label_value)
         grid.addLayout(value_layout, 1, 2)
         self.input_fields["2.3.设计值"] = self.total_value_input
 
@@ -294,20 +300,20 @@ class TechWaterSupplySystemPage(QWidget):
         if is_total:
             self.total_design_usage_input = QLineEdit()
             self.total_design_usage_input.setReadOnly(True)
-            self.total_design_usage_input.setStyleSheet("font-size: 20px; min-height: 35px; min-width: 250px;")
+            self.total_design_usage_input.setStyleSheet(self.common_input_style + "min-width: 250px;")
             row_layout.addWidget(self.total_design_usage_input)
 
             self.source_key_total = source_key
         else:
             input_field = QLineEdit()
             input_field.setReadOnly(True)
-            input_field.setStyleSheet("font-size: 20px; min-height: 35px; min-width: 250px;")
+            input_field.setStyleSheet(self.common_input_style + "min-width: 250px;")
             row_layout.addWidget(input_field)
 
             input_field.source_key = source_key
 
         unit_label = QLabel(unit)
-        unit_label.setStyleSheet("font-size: 20px; min-height: 35px; padding-top: 5px; min-width: 70px;")
+        unit_label.setStyleSheet(self.unit_style)
         row_layout.addWidget(unit_label)
 
         row_layout.addStretch(1)
@@ -332,16 +338,20 @@ class TechWaterSupplySystemPage(QWidget):
         vj_layout.addWidget(vj_label)
 
         self.flow_speed_min = QLineEdit()
-        self.flow_speed_min.setStyleSheet(self.input_style + "min-width: 100px;")
+        self.flow_speed_min.setStyleSheet(self.common_input_style + "min-width: 100px;")
+        self.flow_speed_min.setText("1.0")
         vj_layout.addWidget(self.flow_speed_min)
 
         vj_layout.addWidget(QLabel("~"))
 
         self.flow_speed_max = QLineEdit()
-        self.flow_speed_max.setStyleSheet(self.input_style + "min-width: 100px;")
+        self.flow_speed_max.setStyleSheet(self.common_input_style + "min-width: 100px;")
+        self.flow_speed_max.setText("3.0")
         vj_layout.addWidget(self.flow_speed_max)
 
-        vj_layout.addWidget(QLabel("m/s"))
+        unit_label = QLabel("m/s")
+        unit_label.setStyleSheet(self.unit_style)
+        vj_layout.addWidget(unit_label)
         vj_layout.addStretch(1)
 
         layout.addWidget(vj_group)
@@ -356,6 +366,12 @@ class TechWaterSupplySystemPage(QWidget):
             {"title": "2.6.3 推力轴承油冷却器供水管", "button_text": "材料\n选择",
              "param_names": ["计算管径d", "设计管型", "管内流速V"]},
             {"title": "2.6.4 下导轴承油冷却器供水管", "button_text": "材料\n选择",
+             "param_names": ["计算管径d", "设计管型", "管内流速V"]},
+            {"title": "2.6.5 空气冷却器供水管", "button_text": "材料\n选择",
+             "param_names": ["计算管径d", "设计管型", "管内流速V"]},
+            {"title": "2.6.6 水导轴承冷却水供水管", "button_text": "材料\n选择",
+             "param_names": ["计算管径d", "设计管型", "管内流速V"]},
+            {"title": "2.6.7 主轴密封供水供水管", "button_text": "材料\n选择",
              "param_names": ["计算管径d", "设计管型", "管内流速V"]}
         ]
 
@@ -397,7 +413,9 @@ class TechWaterSupplySystemPage(QWidget):
                 row_layout.addWidget(max_input)
 
                 if i == 0:
-                    row_layout.addWidget(QLabel("m"))
+                    unit_label = QLabel("m")
+                    unit_label.setStyleSheet(self.unit_style)
+                    row_layout.addWidget(unit_label)
 
                 self.input_fields[f"{title}.{name}.最小值"] = min_input
                 self.input_fields[f"{title}.{name}.最大值"] = max_input
@@ -405,7 +423,9 @@ class TechWaterSupplySystemPage(QWidget):
                 value_input = QLineEdit()
                 value_input.setStyleSheet(self.input_style + "min-width: 180px;")
                 row_layout.addWidget(value_input)
-                row_layout.addWidget(QLabel("m/s"))
+                unit_label = QLabel("m/s")
+                unit_label.setStyleSheet(self.unit_style)
+                row_layout.addWidget(unit_label)
                 self.input_fields[f"{title}.{name}"] = value_input
 
             row_layout.addStretch(1)
