@@ -401,24 +401,24 @@ class TechWaterSupplySystemPage(QWidget):
             row_layout.addWidget(label)
 
             if i < 2:  # 前两个参数是范围
-                min_input = QLineEdit()
-                min_input.setStyleSheet(self.input_style + "min-width: 80px;")
-                row_layout.addWidget(min_input)
+                max_input = QLineEdit()
+                max_input.setStyleSheet(self.input_style + "min-width: 80px;")
+                row_layout.addWidget(max_input)
 
                 separator = "~" if i == 0 else "×"
                 row_layout.addWidget(QLabel(separator))
 
-                max_input = QLineEdit()
-                max_input.setStyleSheet(self.input_style + "min-width: 80px;")
-                row_layout.addWidget(max_input)
+                min_input = QLineEdit()
+                min_input.setStyleSheet(self.input_style + "min-width: 80px;")
+                row_layout.addWidget(min_input)
 
                 if i == 0:
                     unit_label = QLabel("m")
                     unit_label.setStyleSheet(self.unit_style)
                     row_layout.addWidget(unit_label)
 
-                self.input_fields[f"{title}.{name}.最小值"] = min_input
                 self.input_fields[f"{title}.{name}.最大值"] = max_input
+                self.input_fields[f"{title}.{name}.最小值"] = min_input
             else:  # 第三个参数是单值
                 value_input = QLineEdit()
                 value_input.setStyleSheet(self.input_style + "min-width: 180px;")
@@ -486,6 +486,33 @@ class TechWaterSupplySystemPage(QWidget):
 
         # 更新总用水量
         self.total_design_usage_input.setText(f"{total_design_usage:.2f}")
+
+        # 更新管道设计结果
+        pipe_keys = [
+            "2.6.1 总管",
+            "2.6.2 上导轴承油冷却器供水管",
+            "2.6.3 推力轴承油冷却器供水管",
+            "2.6.4 下导轴承油冷却器供水管",
+            "2.6.5 空气冷却器供水管",
+            "2.6.6 水导轴承冷却水供水管",
+            "2.6.7 主轴密封供水供水管"
+        ]
+
+        for pipe_key in pipe_keys:
+            max_key = f"{pipe_key}.计算管径d.最大值"
+            min_key = f"{pipe_key}.计算管径d.最小值"
+
+            if max_key in results:
+                max_value = results[max_key]
+                max_field = self.input_fields.get(max_key)
+                if max_field:
+                    max_field.setText(f"{max_value:.3f}")
+
+            if min_key in results:
+                min_value = results[min_key]
+                min_field = self.input_fields.get(min_key)
+                if min_field:
+                    min_field.setText(f"{min_value:.3f}")
 
     def on_param_changed(self, key, value):
         self.backend.set_tech_water_param(key, value)
