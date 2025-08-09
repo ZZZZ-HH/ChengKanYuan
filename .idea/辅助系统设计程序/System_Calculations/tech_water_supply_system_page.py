@@ -18,7 +18,7 @@ class TechWaterSupplySystemPage(QWidget):
         self.update_model_label(self.backend.get_model())
 
     def init_styles(self):
-        """初始化样式表"""
+        """样式表"""
         self.group_style = """
             QGroupBox {
                 font-size: 28px;
