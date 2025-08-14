@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>模型文件查阅系统</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .file-list { list-style: none; padding: 0; }
+        .file-list li { 
+            margin: 10px 0; 
+            padding: 15px; 
+            background: #f9f9f9; 
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .file-info { flex-grow: 1; }
+        .file-name { font-weight: bold; }
+        .file-type { color: #666; font-size: 0.9em; }
+        .path-form { margin: 20px 0; padding: 15px; background: #f5f5f5; border-radius: 5px; }
+        .path-form input { width: 70%; padding: 8px; }
+        .path-form button { padding: 8px 15px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+        .current-path { margin: 10px 0; font-size: 0.9em; color: #666; }
+        .contract-title { 
+            background: #f0f0f0; 
+            padding: 15px; 
+            border-radius: 5px; 
+            margin-bottom: 20px; 
+            text-align: center;
+        }
+        .open-btn {
+            padding: 8px 16px;
+            background: #4CAF50;
+            color: white;
+            border-radius: 4px;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            font-size: 14px;
+        }
+        .open-btn:hover {
+            background: #45a049;
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            background: #4CAF50;
+            color: white;
+            display: none;
+            z-index: 1000;
+        }
+        .error {
+            background: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="notification" id="notification"></div>
+    
+    <div class="container">
+        <div class="contract-title">
+            <h1>合同模型文件</h1>
+            <p>点击"打开"按钮直接使用本地应用程序打开模型文件</p>
+        </div>
+        
+        <div class="current-path">
+            当前文件存储路径: {{ current_path }}
+        </div>
+        
+        <form class="path-form" action="/update_path" method="post">
+            <input type="text" name="new_path" placeholder="输入新的文件存储路径" required value="{{ current_path }}">
+            <button type="submit">更改路径</button>
+        </form>
+        
+        <ul class="file-list">
+            {% for file in files %}
+            <li>
+                <div class="file-info">
+                    <div class="file-name">{{ file }}</div>
+                    <div class="file-type">{{ file.split('.')[-1].upper() }} 文件</div>
+                </div>
+                <button class="open-btn" data-filename="{{ file }}">
+                    打开
+                </button>
+            </li>
+            {% else %}
+            <li>该目录下没有找到模型文件</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <script>
+        // 为所有打开按钮添加点击事件
+        document.querySelectorAll('.open-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const filename = this.getAttribute('data-filename');
+                openFile(filename);
+            });
+        });
+        
+        // 显示通知
+        function showNotification(message, isError = false) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = isError ? 'notification error' : 'notification';
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 打开文件函数
+        function openFile(filename) {
+            fetch('/open_file', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ filename: filename })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(`正在打开 ${filename}...`);
+                } else {
+                    showNotification(`打开文件失败: ${data.error || '未知错误'}`, true);
+                }
+            })
+            .catch(error => {
+                showNotification(`请求失败: ${error.message}`, true);
+            });
+        }
+    </script>
+</body>
+</html>
